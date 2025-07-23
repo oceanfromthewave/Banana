@@ -1,0 +1,20 @@
+body {
+  margin: 0;
+  padding: 0;
+  background: linear-gradient(135deg, #fff8e1 0%, #ffd700 100%);
+  font-family: 'Pretendard', 'Inter', 'Segoe UI', Arial, sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+.game-root {
+  position: relative;
+  min-height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+}
+
+@keyframes slide-in {
+  0%   { transform: translateY(18px); opacity: 0; }
+  100% { transform: translateY(0);    opacity: 1; }
+}
