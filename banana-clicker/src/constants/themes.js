@@ -1,5 +1,3 @@
-// src/constants/themes.js
-
 import dayImg from "../assets/dayImg.png";
 import nightImg from "../assets/nightImg.png";
 import cityImg from "../assets/cityImg.png";
@@ -16,15 +14,6 @@ export const THEMES = [
     bg: "linear-gradient(135deg, #243b55 0%, #141e30 100%)",
     image: nightImg,
   },
-  {
-    name: "City",
-    bg: "#e8e9ef",
-    image: cityImg,
-  },
-  {
-    name: "Space",
-    bg: "#1a1834",
-    image: spaceImg,
-  },
-  // 원하는 만큼 추가
+  { name: "City", bg: "#e8e9ef", image: cityImg },
+  { name: "Space", bg: "#1a1834", image: spaceImg },
 ];

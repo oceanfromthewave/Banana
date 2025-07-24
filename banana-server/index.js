@@ -1,4 +1,5 @@
 const express = require("express");
+import Character from "./../banana-clicker/src/components/Character";
 const cors = require("cors");
 const { PrismaClient } = require("@prisma/client");
 
@@ -25,6 +26,45 @@ app.get("/api/ranking", async (req, res) => {
     take: 10,
   });
   res.json(top);
+});
+
+// 캐릭터 목록
+app.get("/api/characters", async (req, res) => {
+  const chars = await prisma.character.findMany();
+  res.json(chars);
+});
+
+// 보유 캐릭터 조회 (userId query)
+app.get("/api/user-characters", async (req, res) => {
+  const { userId } = req.query;
+  const owned = await prisma.userCharacter.findMany({
+    where: { userId: Number(userId) },
+    include: { character: true },
+  });
+  res.json(owned.map((c) => c.character.key));
+});
+
+// 뽑기 (랜덤)
+app.post("/api/draw", async (req, res) => {
+  const { userId } = req.body;
+  // 로직: userId의 미보유 캐릭터 중 1개 랜덤 선택 → 추가
+  const all = await prisma.character.findMany();
+  const ownedKeys = (
+    await prisma.userCharacter.findMany({
+      where: { userId },
+      select: { character: { select: { key: true } } },
+    })
+  ).map((x) => x.character.key);
+  const notOwned = all.filter((c) => !ownedKeys.includes(c.key));
+  if (!notOwned.length)
+    return res.json({ ok: false, message: "이미 전체 보유" });
+
+  const idx = Math.floor(Math.random() * notOwned.length);
+  const char = notOwned[idx];
+  await prisma.userCharacter.create({
+    data: { userId, characterId: char.id },
+  });
+  res.json({ ok: true, character: char });
 });
 
 const PORT = 4000;

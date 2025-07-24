@@ -1,0 +1,122 @@
+.gachaModal {
+  background: rgba(255,255,255,0.98);
+  border-radius: 18px;
+  box-shadow: 0 4px 24px #2221;
+  padding: 26px 26px 18px 26px;
+  width: 270px;
+  min-height: 128px;
+  text-align: center;
+  transition: box-shadow 0.18s;
+
+  @media (max-width: 600px) {
+    width: 94vw;
+    min-width: 0;
+    padding: 13px 2vw;
+  }
+}
+
+.title {
+  font-weight: 800;
+  font-size: 23px;
+  letter-spacing: -1px;
+  margin-bottom: 13px;
+}
+
+.action {
+  margin-bottom: 15px;
+  min-height: 42px;
+}
+.rollBtn {
+  font-size: 20px;
+  font-weight: 700;
+  padding: 10px 32px;
+  border-radius: 14px;
+  background: linear-gradient(90deg,#ffe066 60%,#fffde0 100%);
+  border: none;
+  box-shadow: 0 2px 11px #ffd70040;
+  cursor: pointer;
+  opacity: 1;
+  transition: opacity .13s, box-shadow .17s;
+  &:active { box-shadow: 0 2px 18px #ffd70055; }
+  &:disabled { opacity: 0.54; cursor: default; }
+}
+.cooldown {
+  color: #d12;
+  font-weight: 600;
+  font-size: 16px;
+  letter-spacing: 1px;
+}
+.ownedWrap {
+  margin-bottom: 10px;
+  b { font-weight: 700; font-size: 15px; }
+}
+.ownedList {
+  margin-left: 5px;
+}
+.ownedChar {
+  font-size: 22px;
+  margin-right: 7px;
+  vertical-align: middle;
+  filter: drop-shadow(0 2px 4px #ffe06666);
+  transition: filter 0.2s;
+}
+
+.resultWrap {
+  margin-top: 18px;
+  min-height: 55px;
+  transition: all 0.3s;
+}
+.rollingText {
+  font-size: 29px;
+  opacity: 0.77;
+  letter-spacing: 2px;
+  animation: pulse 1.2s infinite;
+}
+@keyframes pulse {
+  0% { opacity: 0.7; }
+  55% { opacity: 1; }
+  100% { opacity: 0.7; }
+}
+
+.resultSuccess {
+  margin-top: 4px;
+  font-size: 29px;
+  font-weight: 800;
+  color: #e1a700;
+  text-shadow: 0 0 40px #ffe066, 0 0 90px #ffd70077;
+  animation: pop-in 0.45s cubic-bezier(.6,-0.02,.33,1.22);
+  .resultEmoji {
+    font-size: 43px;
+    vertical-align: middle;
+    margin-right: 7px;
+    text-shadow: 0 0 25px #fffbb2;
+    animation: swing 0.7s;
+  }
+  .resultText {
+    margin-left: 8px;
+    font-size: 26px;
+  }
+}
+@keyframes pop-in {
+  0% { transform: scale(0.7); opacity: 0; }
+  80% { transform: scale(1.12); opacity: 1;}
+  100% { transform: scale(1); }
+}
+@keyframes swing {
+  0% { transform: rotate(-25deg) scale(1.1);}
+  60% { transform: rotate(15deg) scale(1);}
+  100% { transform: rotate(0deg);}
+}
+.resultFail {
+  margin-top: 3px;
+  font-size: 23px;
+  color: #aaa;
+  font-weight: 700;
+  animation: pop-in 0.5s;
+  .resultMsg {
+    font-size: 16.5px;
+    color: #bbb;
+    margin-left: 7px;
+    font-weight: 600;
+  }
+}

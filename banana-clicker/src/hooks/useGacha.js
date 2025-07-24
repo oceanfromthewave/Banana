@@ -1,43 +1,35 @@
-import { useState, useEffect } from "react";
+import { useEffect, useState } from "react";
 
-const CHARACTERS = ["banana", "tomato", "peach", "apple", "strawberry"];
-
-export function useGacha() {
-  // 마지막 뽑기 시각 저장
-  const [lastTime, setLastTime] = useState(() =>
-    Number(localStorage.getItem("gacha-last") || 0)
-  );
-  // 보유 캐릭터
-  const [owned, setOwned] = useState(() =>
-    JSON.parse(localStorage.getItem("gacha-owned") || '["banana"]')
-  );
-  // 남은 쿨타임
-  const [cooldown, setCooldown] = useState(0);
+export function useGacha(userId = 1) {
+  const [owned, setOwned] = useState([]);
+  const [all, setAll] = useState([]);
+  const [cooldown, setCooldown] = useState(0); // 쿨타임 적용시 추가
 
   useEffect(() => {
-    const interval = setInterval(() => {
-      const remain = Math.max(0, lastTime + 3 * 60 * 60 * 1000 - Date.now());
-      setCooldown(remain);
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [lastTime]);
+    // 전체 캐릭터 목록
+    fetch("/api/characters")
+      .then((r) => r.json())
+      .then(setAll);
+    // 유저 보유 캐릭터
+    fetch(`/api/user-characters?userId=${userId}`)
+      .then((r) => r.json())
+      .then(setOwned);
+  }, [userId]);
 
-  // 뽑기 시도
-  function roll() {
-    if (cooldown > 0) return null;
-    // 랜덤 캐릭터(이미 있으면 꽝)
-    const available = CHARACTERS.filter((c) => !owned.includes(c));
-    if (available.length === 0) return null;
-    const idx = Math.floor(Math.random() * available.length);
-    const result = available[idx];
-
-    const next = [...owned, result];
-    setOwned(next);
-    setLastTime(Date.now());
-    localStorage.setItem("gacha-last", Date.now());
-    localStorage.setItem("gacha-owned", JSON.stringify(next));
-    return result;
+  // 뽑기
+  async function roll() {
+    const res = await fetch("/api/draw", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ userId }),
+    });
+    const data = await res.json();
+    if (data.ok) {
+      setOwned((prev) => [...prev, data.character.key]);
+      return data.character.key;
+    }
+    return null;
   }
 
-  return { owned, cooldown, roll };
+  return { owned, all, roll };
 }

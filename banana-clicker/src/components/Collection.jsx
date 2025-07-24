@@ -1,4 +1,5 @@
 import React from "react";
+import styles from "../styles/Collection.module.scss";
 
 const ALL_CHARACTERS = [
   { key: "banana", name: "바나나" },
@@ -11,52 +12,25 @@ const ALL_CHARACTERS = [
 function Collection({ owned, IMG_MAP }) {
   const percent = Math.round((owned.length / ALL_CHARACTERS.length) * 100);
   return (
-    <div
-      style={{
-        position: "absolute",
-        right: 36,
-        bottom: 36,
-        zIndex: 101,
-        minWidth: 200,
-        background: "rgba(255,255,255,0.97)",
-        borderRadius: 18,
-        padding: "14px 20px 14px 20px",
-        boxShadow: "0 3px 16px #2221",
-        textAlign: "center",
-      }}
-    >
-      <div style={{fontWeight: 700, fontSize: 17, marginBottom: 7}}>
-        📒 캐릭터 도감
+    <div className={styles.collectionBox}>
+      <div className={styles.header}>📒 캐릭터 도감</div>
+      <div className={styles.progress}>
+        수집률 <span className={styles.percent}>{percent}%</span>
+        <span className={styles.count}>({owned.length}/{ALL_CHARACTERS.length})</span>
       </div>
-      <div style={{marginBottom: 8, fontWeight: 500}}>
-        수집률 <span style={{color: "#d18900"}}>{percent}%</span>
-        <span style={{fontWeight: 400, color: "#aaa", marginLeft: 8}}>
-          ({owned.length}/{ALL_CHARACTERS.length})
-        </span>
-      </div>
-      <div style={{display: "flex", justifyContent: "center", gap: 13}}>
+      <div className={styles.grid}>
         {ALL_CHARACTERS.map((c) => (
-          <div key={c.key} style={{opacity: owned.includes(c.key) ? 1 : 0.22, textAlign: "center"}}>
+          <div
+            key={c.key}
+            className={`${styles.item} ${owned.includes(c.key) ? styles.owned : styles.locked}`}
+          >
             <img
               src={IMG_MAP[c.key]}
               alt={c.name}
-              style={{
-                width: 36, height: 36,
-                objectFit: "contain",
-                filter: owned.includes(c.key) ? "none" : "grayscale(1) blur(1.3px)",
-                marginBottom: 2,
-                borderRadius: 9,
-                background: owned.includes(c.key) ? "#fff" : "#ccc"
-              }}
+              className={styles.img}
               draggable="false"
             />
-            <div style={{
-              fontSize: 12,
-              marginTop: 0,
-              color: owned.includes(c.key) ? "#444" : "#aaa"
-            }}>
-              {c.name}
-            </div>
+            <div className={styles.name}>{c.name}</div>
           </div>
         ))}
       </div>

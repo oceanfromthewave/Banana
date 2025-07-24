@@ -1,0 +1,195 @@
+.gameRoot {
+  min-height: 100vh;
+  min-width: 100vw;
+  position: relative;
+  overflow: hidden;
+  font-family: 'Pretendard', 'Inter', 'Segoe UI', Arial, sans-serif;
+}
+.bgCover {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  background: center/cover no-repeat;
+}
+.bgOverlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  opacity: 0.82;
+  mix-blend-mode: lighter;
+}
+.centerGradient {
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  background: radial-gradient(
+    circle at 52% 55%,
+    rgba(255,255,255,0.13) 0%,
+    rgba(255,255,255,0.01) 60%,
+    rgba(0,0,0,0.08) 90%
+  );
+}
+.bgSolid {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+}
+
+.uiWrap {
+  position: relative;
+  z-index: 10;
+  width: 100vw;
+  height: 100vh;
+}
+
+/* 우측 상단(ThemeSwitcher + SaveBtn + 시간) 한줄 flex 정렬 */
+.topRightUI {
+  position: absolute;
+  top: 40px;
+  right: 40px;
+  z-index: 200;
+  display: flex;
+  flex-direction: column; /* 버튼/셀렉트는 row로, 시간은 아래로 */
+  align-items: flex-end;
+  gap: 7px;
+}
+
+.topRightRow {
+  display: flex;
+  flex-direction: row;
+  gap: 12px;
+  align-items: center;
+}
+
+.saveBtn {
+  padding: 8px 25px;
+  background: #7de47c;
+  border-radius: 11px;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  color: #fff;
+  vertical-align: middle;
+}
+
+.timeNow {
+  font-size: 14px;
+  color: #444;
+  margin-top: 3px;
+  margin-right: 1px;
+  white-space: nowrap;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 1px 7px #bbb2;
+  padding: 6px 16px 6px 12px;
+  font-weight: 500;
+  letter-spacing: 0.2px;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 176px;
+  justify-content: flex-end;
+  border: 1.2px solid #ececec;
+}
+
+.timeNowIcon {
+  font-size: 17px;
+  margin-right: 3px;
+  color: #80b2ee;
+  vertical-align: middle;
+  opacity: 0.85;
+}
+
+/* Collection(보유캐릭터) 우측하단 고정 */
+.collectionWrap {
+  position: absolute;
+  right: 40px;
+  bottom: 40px;
+  z-index: 101;
+}
+
+/* 캐릭터 선택바(좌하단) */
+.charSelectBar {
+  position: absolute;
+  left: 32px;
+  bottom: 32px;
+  z-index: 100;
+  display: flex;
+  gap: 10px;
+  background: #fff8;
+  border-radius: 18px;
+  padding: 14px 18px;
+  box-shadow: 0 2px 14px #2222;
+}
+.charBtn {
+  background: #fff;
+  border: 2px solid #eee;
+  border-radius: 11px;
+  padding: 3px;
+  width: 52px;
+  height: 52px;
+  cursor: pointer;
+  outline: none;
+  box-shadow: none;
+  transition: all 0.14s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  &:hover, &:focus {
+    border-color: #ffd700;
+    box-shadow: 0 2px 12px #ffd70044;
+  }
+}
+.charBtnActive {
+  background: #ffd700;
+  border: 2.5px solid #ffe066;
+  box-shadow: 0 2px 12px #ffd70066;
+}
+.charBtnImg {
+  width: 38px;
+  height: 38px;
+  object-fit: contain;
+  user-select: none;
+}
+
+.rankingBtn {
+  position: absolute;
+  top: 40px;
+  left: 40px;
+  z-index: 200;
+  padding: 8px 25px;
+  background: #ffe066;
+  border-radius: 11px;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+}
+
+.modalBG {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0,0,0,0.32);
+  z-index: 9998;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.modalBox {
+  background: #fff;
+  border-radius: 18px;
+  min-width: 320px;
+  padding: 26px;
+  box-shadow: 0 4px 44px #2224;
+}
+.modalCloseBtn {
+  padding: 7px 20px;
+  font-weight: 600;
+  border-radius: 9px;
+  border: none;
+  background: #eee;
+}
