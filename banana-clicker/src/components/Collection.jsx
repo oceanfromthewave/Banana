@@ -6,7 +6,8 @@ const ALL_CHARACTERS = [
   { key: "tomato", name: "토마토" },
   { key: "peach", name: "복숭아" },
   { key: "apple", name: "사과" },
-  { key: "strawberry", name: "딸기" }
+  { key: "strawberry", name: "딸기" },
+  { key: "grape", name: "포도" },
 ];
 
 function Collection({ owned, IMG_MAP }) {

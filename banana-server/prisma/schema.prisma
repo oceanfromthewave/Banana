@@ -1,13 +1,44 @@
 generator client {
   provider = "prisma-client-js"
 }
+
 datasource db {
   provider = "mysql"
   url      = env("DATABASE_URL")
 }
+
+model User {
+  id         Int             @id @default(autoincrement())
+  nickname   String          @unique
+  createdAt  DateTime        @default(now())
+  scores     Score[]
+  ownedChars UserCharacter[]
+}
+
 model Score {
   id        Int      @id @default(autoincrement())
-  nickname  String
-  score     Int
+  value     Int
+  userId    Int
   createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id])
+}
+
+model Character {
+  id        Int      @id @default(autoincrement())
+  key       String   @unique
+  name      String
+  emoji     String?
+  createdAt DateTime @default(now())
+  owners    UserCharacter[]
+}
+
+model UserCharacter {
+  id           Int        @id @default(autoincrement())
+  userId       Int
+  characterId  Int
+  acquiredAt   DateTime   @default(now())
+  user         User       @relation(fields: [userId], references: [id])
+  character    Character  @relation(fields: [characterId], references: [id])
+
+  @@unique([userId, characterId])
 }

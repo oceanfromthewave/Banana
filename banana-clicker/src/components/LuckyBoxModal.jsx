@@ -1,72 +1,104 @@
-import React, { useRef, useState } from "react";
+import React, { useState, useEffect } from "react";
 import styles from "../styles/LuckyBoxModal.module.scss";
-import boxImg from "../assets/box.png";
+import boxImg from "../assets/box.png"; // 반드시 존재해야함
 
-function LuckyBoxModal({ open, cooldown, cooldownText, result, onDraw, onClose }) {
-  const [opened, setOpened] = useState(false);
-  const [showResult, setShowResult] = useState(false);
-  const boxRef = useRef();
+function msToHMS(ms) {
+  let s = Math.ceil(ms / 1000);
+  let h = Math.floor(s / 3600);
+  let m = Math.floor((s % 3600) / 60);
+  s = s % 60;
+  return `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
+}
 
-  // 상자 클릭 시
-  const handleBoxClick = () => {
-    if (opened) return;
-    setOpened(true);
-    setTimeout(() => {
-      setShowResult(true);
-      if (onDraw) onDraw();
-      // 자동 닫기 1.4초 뒤
-      setTimeout(() => {
-        setOpened(false);
-        setShowResult(false);
-        if (onClose) onClose();
-      }, 1200);
-    }, 900); // 애니메이션 시간
-  };
+const BLUR_BG_STYLE = {
+  backdropFilter: "blur(4px)",
+  background: "rgba(0,0,0,0.28)"
+};
 
-  // 모달 외부 클릭 시 닫기 방지(상자 열릴 때는 절대 닫기 X)
-  const handleModalBGClick = (e) => {
-    if (!opened && e.target === e.currentTarget && onClose) onClose();
-  };
+function LuckyBoxModal({ open, onClose, nickname, onSuccess, cooldown }) {
+  const [rolling, setRolling] = useState(false);
+  const [result, setResult] = useState(null); // { prize: 'banana' } or null
+  const [error, setError] = useState("");
+  const [remain, setRemain] = useState(cooldown);
 
-  return open ? (
-    <div className={styles.luckyModalBG} onClick={handleModalBGClick}>
-      <div className={styles.centerWrap}>
-        <div className={styles.guide}>🎁 3시간에 한 번!  
-          <br />럭키박스를 열어보세요!
-        </div>
-        <div className={styles.boxWrap}>
+  // 쿨타임 체크
+  useEffect(() => {
+    if (!open) return;
+    setRemain(cooldown);
+    if (cooldown > 0) {
+      const t = setInterval(() => {
+        setRemain(r => Math.max(0, r - 1000));
+      }, 1000);
+      return () => clearInterval(t);
+    }
+  }, [cooldown, open]);
+
+  if (!open) return null;
+
+  // 뽑기 버튼
+  async function handleDraw() {
+    setRolling(true);
+    setError("");
+    setResult(null);
+    try {
+      const res = await fetch("/api/collection/luckybox", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nickname }),
+      });
+      if (res.status === 403) {
+        const data = await res.json();
+        setError(`⏳ 쿨타임: ${msToHMS(data.remain)}`);
+      } else if (res.ok) {
+        const data = await res.json();
+        setResult(data.prize ? data.prize : "fail");
+        if (data.prize) onSuccess && onSuccess();
+      } else {
+        setError("에러가 발생했습니다");
+      }
+    } catch (e) {
+      setError("네트워크 오류");
+    } finally {
+      setRolling(false);
+    }
+  }
+
+  return (
+    <div className={styles.modalBg} style={BLUR_BG_STYLE}>
+      <div className={styles.luckyBoxModal}>
+        <div className={styles.header}>🎁 럭키박스 - 3시간마다 도전!</div>
+        <div className={styles.desc}>상자를 클릭해서 새로운 캐릭터를 뽑아보세요!</div>
+        <button
+          className={styles.boxBtn}
+          onClick={handleDraw}
+          disabled={rolling || remain > 0}
+          style={{ outline: "none" }}
+        >
           <img
             src={boxImg}
             alt="럭키박스"
-            className={`${styles.boxImg} ${opened ? styles.opened : ""}`}
-            onClick={handleBoxClick}
-            ref={boxRef}
-            tabIndex={0}
-            aria-label="럭키박스 열기"
+            className={`${styles.boxImg} ${rolling ? styles.rolling : ""}`}
           />
-          {!opened &&
-            <div className={styles.clickGuide}>
-              <span>상자를 눌러서 열기</span>
-            </div>
-          }
-          {/* 결과 */}
-          {showResult && result && (
-            <div className={styles.resultPanel}>
-              {result.key
-                ? <span className={styles.prize}>
-                    <span className={styles.emoji}>{result.emoji}</span>
-                    <span className={styles.prizeName}>{result.name} 획득!</span>
-                  </span>
-                : <span className={styles.failMsg}>
-                    ❌ 꽝! <span>아쉽게도 아이템이 없습니다.</span>
-                  </span>
-              }
-            </div>
-          )}
-        </div>
+        </button>
+        {rolling && <div className={styles.msg}>상자를 여는 중...</div>}
+        {result === "fail" && (
+          <div className={styles.fail}>❌ 꽝! (이미 다 모았거나 확률 실패)</div>
+        )}
+        {result && result !== "fail" && (
+          <div className={styles.success}>
+            <b>🎉 축하합니다! 새로운 캐릭터: {result}</b>
+          </div>
+        )}
+        {error && <div className={styles.error}>{error}</div>}
+        {remain > 0 && (
+          <div className={styles.cooldown}>⏳ {msToHMS(remain)} 후 재도전</div>
+        )}
+        <button className={styles.closeBtn} onClick={onClose} disabled={rolling}>
+          닫기
+        </button>
       </div>
     </div>
-  ) : null;
+  );
 }
 
 export default LuckyBoxModal;

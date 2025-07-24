@@ -1,24 +1,34 @@
-.character {
-  width: 180px;
-  height: 180px;
-  cursor: pointer;
-  position: absolute;
-  left: 50%;
-  top: 52%;
-  transform: translate(-50%, -50%);
-  user-select: none;
-  z-index: 20;
-  outline: none;
-
-  &:focus {
-    box-shadow: 0 0 0 3px #ffd70088;
-  }
+.charRoot {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none; // 자식이 pointer-events: auto면 클릭 가능
+  z-index: 11;
 }
 .img {
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
+  width: 140px;
+  height: 140px;
+  user-select: none;
+  border-radius: 27px;
+  // box-shadow: 0 8px 32px #0002;
+  // background: #fff9;
+  cursor: pointer;
+  pointer-events: auto;
+  transition: filter 0.1s;
+  &:hover, &:active {
+    filter: brightness(1.08) drop-shadow(0 0 7px #ffe06666);
+  }
+}
+
+.particle {
+  position: absolute;
   pointer-events: none;
   user-select: none;
-  display: block;
+  font-weight: bold;
+  font-size: 2rem;
+  color: #ffe066;
+  text-shadow: 0 2px 8px #0005;
+  will-change: transform, opacity;
+  z-index: 12;
 }

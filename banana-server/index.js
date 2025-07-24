@@ -1,5 +1,4 @@
 const express = require("express");
-import Character from "./../banana-clicker/src/components/Character";
 const cors = require("cors");
 const { PrismaClient } = require("@prisma/client");
 
@@ -8,63 +7,140 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-// 점수 저장
+const COOLDOWN_MS = 3 * 60 * 60 * 1000;
+
+// 1. 유저 등록/조회 (닉네임, 최초 등록시 바나나 캐릭터 지급)
+app.post("/api/user", async (req, res) => {
+  const { nickname } = req.body;
+  if (!nickname || typeof nickname !== "string")
+    return res.status(400).json({ ok: false, error: "닉네임 필수" });
+  let user = await prisma.user.findUnique({ where: { nickname } });
+  if (!user) {
+    user = await prisma.user.create({ data: { nickname } });
+    // 최초 바나나 캐릭터 지급
+    const banana = await prisma.character.findUnique({
+      where: { key: "banana" },
+    });
+    if (banana) {
+      await prisma.userCharacter.create({
+        data: { userId: user.id, characterId: banana.id },
+      });
+    }
+  }
+  return res.json({ ok: true, user });
+});
+
+// 2. 전체 캐릭터 목록
+app.get("/api/characters", async (req, res) => {
+  const chars = await prisma.character.findMany({ orderBy: { id: "asc" } });
+  return res.json(chars);
+});
+
+// 3. 내 캐릭터 컬렉션 조회 (닉네임 기준)
+app.get("/api/collection/:nickname", async (req, res) => {
+  const { nickname } = req.params;
+  const user = await prisma.user.findUnique({
+    where: { nickname },
+    include: {
+      ownedChars: {
+        include: { character: true },
+        orderBy: { acquiredAt: "asc" },
+      },
+    },
+  });
+  // ★ 404 대신 빈 배열 반환 (유저가 없으면 owned: [])
+  if (!user) {
+    return res.json({ ok: true, owned: [] });
+  }
+  const owned = user.ownedChars.map((uc) => uc.character.key);
+  return res.json({ ok: true, owned });
+});
+
+// 4. 마지막 럭키박스 뽑기 시각 반환
+app.get("/api/luckybox/last/:nickname", async (req, res) => {
+  const { nickname } = req.params;
+  const user = await prisma.user.findUnique({ where: { nickname } });
+  if (!user) return res.status(404).json({ lastTime: null });
+  const last = await prisma.userCharacter.findFirst({
+    where: { userId: user.id },
+    orderBy: { acquiredAt: "desc" }, // ← 오타 수정
+  });
+  return res.json({ lastTime: last ? last.acquiredAt.getTime() : null });
+});
+
+// 5. LuckyBox (3시간 쿨타임) 캐릭터 뽑기
+app.post("/api/collection/luckybox", async (req, res) => {
+  const { nickname } = req.body;
+  if (!nickname)
+    return res.status(400).json({ ok: false, error: "닉네임 필요" });
+  const user = await prisma.user.findUnique({ where: { nickname } });
+  if (!user)
+    return res.status(404).json({ ok: false, error: "존재하지 않는 닉네임" });
+
+  // 마지막 캐릭터 획득시간 기준 쿨타임
+  const last = await prisma.userCharacter.findFirst({
+    where: { userId: user.id },
+    orderBy: { acquiredAt: "desc" },
+  });
+  const lastTime = last ? last.acquiredAt.getTime() : 0;
+  const now = Date.now();
+  const cooldown = COOLDOWN_MS;
+  if (lastTime && now - lastTime < cooldown) {
+    return res.status(403).json({
+      ok: false,
+      error: "쿨타임",
+      remain: cooldown - (now - lastTime),
+    });
+  }
+
+  // 미보유 캐릭터만 추첨
+  const allChars = await prisma.character.findMany();
+  const ownedChars = await prisma.userCharacter.findMany({
+    where: { userId: user.id },
+    select: { characterId: true },
+  });
+  const ownedIds = ownedChars.map((c) => c.characterId);
+  const notOwned = allChars.filter((c) => !ownedIds.includes(c.id));
+  let prize = null;
+  if (notOwned.length > 0 && Math.random() < 0.003) {
+    // 0.3%
+    const idx = Math.floor(Math.random() * notOwned.length);
+    prize = notOwned[idx];
+    await prisma.userCharacter.create({
+      data: { userId: user.id, characterId: prize.id },
+    });
+  }
+  return res.json({ ok: true, prize: prize ? prize.key : null });
+});
+
+// 6. 점수 저장
 app.post("/api/score", async (req, res) => {
   const { nickname, score } = req.body;
-  if (!nickname || !score)
-    return res.status(400).json({ ok: false, error: "닉네임/점수 필수" });
-  const newScore = await prisma.score.create({
-    data: { nickname, score: Number(score) },
+  if (!nickname || typeof score !== "number")
+    return res.status(400).json({ ok: false, error: "닉네임/점수 필요" });
+  const user = await prisma.user.findUnique({ where: { nickname } });
+  if (!user)
+    return res.status(404).json({ ok: false, error: "존재하지 않는 닉네임" });
+  const saved = await prisma.score.create({
+    data: { userId: user.id, value: score },
   });
-  res.json({ ok: true, id: newScore.id });
+  return res.json({ ok: true, score: saved.value });
 });
 
-// 상위 랭킹 조회(Top 10)
+// 7. 랭킹 (Top 10)
 app.get("/api/ranking", async (req, res) => {
-  const top = await prisma.score.findMany({
-    orderBy: { score: "desc" },
+  const ranking = await prisma.score.findMany({
+    orderBy: { value: "desc" },
+    include: { user: true },
     take: 10,
   });
-  res.json(top);
-});
-
-// 캐릭터 목록
-app.get("/api/characters", async (req, res) => {
-  const chars = await prisma.character.findMany();
-  res.json(chars);
-});
-
-// 보유 캐릭터 조회 (userId query)
-app.get("/api/user-characters", async (req, res) => {
-  const { userId } = req.query;
-  const owned = await prisma.userCharacter.findMany({
-    where: { userId: Number(userId) },
-    include: { character: true },
-  });
-  res.json(owned.map((c) => c.character.key));
-});
-
-// 뽑기 (랜덤)
-app.post("/api/draw", async (req, res) => {
-  const { userId } = req.body;
-  // 로직: userId의 미보유 캐릭터 중 1개 랜덤 선택 → 추가
-  const all = await prisma.character.findMany();
-  const ownedKeys = (
-    await prisma.userCharacter.findMany({
-      where: { userId },
-      select: { character: { select: { key: true } } },
-    })
-  ).map((x) => x.character.key);
-  const notOwned = all.filter((c) => !ownedKeys.includes(c.key));
-  if (!notOwned.length)
-    return res.json({ ok: false, message: "이미 전체 보유" });
-
-  const idx = Math.floor(Math.random() * notOwned.length);
-  const char = notOwned[idx];
-  await prisma.userCharacter.create({
-    data: { userId, characterId: char.id },
-  });
-  res.json({ ok: true, character: char });
+  return res.json(
+    ranking.map((r) => ({
+      nickname: r.user.nickname,
+      score: r.value,
+      createdAt: r.createdAt,
+    }))
+  );
 });
 
 const PORT = 4000;

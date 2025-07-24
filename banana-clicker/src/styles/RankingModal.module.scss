@@ -1,69 +1,46 @@
-// RankingModal.module.scss
-.modalBG {
-  position: fixed;
-  left: 0;
-  top: 0;
-  width: 100vw;
-  height: 100vh;
-  background: rgba(0,0,0,0.38);
-  z-index: 9999;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+// src/styles/RankingModal.module.scss
+.modalBg {
+  position: fixed; left: 0; top: 0; width: 100vw; height: 100vh;
+  background: rgba(0,0,0,0.35); z-index: 9998;
+  display: flex; align-items: center; justify-content: center;
 }
-.modalBox {
-  background: #fff;
-  border-radius: 20px;
-  min-width: 340px;
-  padding: 30px;
-  box-shadow: 0 4px 32px #2222;
+.rankingModal {
+  background: #fff; border-radius: 20px; box-shadow: 0 4px 44px #2224;
+  min-width: 350px; max-width: 98vw; padding: 30px 20px 24px 20px;
 }
-.title {
-  margin: 0;
-  margin-bottom: 18px;
-  text-align: center;
-  font-weight: 800;
-  font-size: 25px;
-  letter-spacing: -1.5px;
+.header {
+  font-size: 1.7rem; font-weight: 700; margin-bottom: 14px;
 }
 .rankingList {
-  margin-top: 10px;
-  margin-bottom: 12px;
+  display: flex; flex-direction: column; gap: 8px; margin-bottom: 15px;
+  max-height: 350px; overflow-y: auto;
 }
-.noRanking {
-  text-align: center;
-  font-size: 15px;
-  color: #aaa;
-}
-.rankRow {
-  font-size: 18px;
-  margin-bottom: 7px;
-  display: flex;
-  align-items: center;
-  .rankIdx {
-    min-width: 42px;
-    font-weight: 700;
-    font-size: 20px;
-    color: #ffa800;
-  }
-  .rankName {
-    color: #ffce47;
-    font-weight: 700;
-    margin-left: 5px;
-    min-width: 95px;
-  }
-  .rankScore {
-    font-weight: 600;
-    color: #222;
-    margin-left: 5px;
+.rankingRow {
+  display: grid; grid-template-columns: 45px 1fr 80px 125px;
+  align-items: center; padding: 6px 10px; border-radius: 13px;
+  font-size: 16px; font-weight: 600;
+  background: #f8f8ff;
+  transition: background 0.14s;
+  &.me {
+    background: #fff6d1;
+    color: #f5b500;
+    font-weight: 800;
+    box-shadow: 0 2px 14px #ffe06688;
   }
 }
+.trophy { width: 30px; vertical-align: middle; }
+.rank { font-size: 20px; font-weight: 900; text-align: center; }
+.nick { font-size: 1rem; }
+.score { color: #22b455; text-align: right; font-weight: 800; }
+.date { font-size: 13px; color: #999; text-align: right; }
+.noData { text-align: center; color: #aaa; margin: 25px 0; font-size: 17px; }
 .closeBtn {
-  padding: 7px 20px;
-  font-weight: 600;
-  border-radius: 9px;
-  border: none;
-  background: #eee;
-  font-size: 16px;
-  cursor: pointer;
+  margin-top: 14px; background: #eee; border-radius: 8px; padding: 9px 23px;
+  font-weight: 700; border: none; font-size: 17px; cursor: pointer;
+}
+@media (max-width: 600px) {
+  .rankingModal { min-width: 0; padding: 12px 3px 9px 3px; }
+  .rankingList { font-size: 13px; }
+  .rankingRow { font-size: 13px; padding: 5px 3px; grid-template-columns: 30px 1fr 45px 70px; }
+  .trophy { width: 20px; }
 }

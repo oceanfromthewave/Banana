@@ -7,6 +7,7 @@ const EMOJI = {
   peach: "🍑",
   apple: "🍎",
   strawberry: "🍓",
+  grape: "🍇"
 };
 
 function msToHMS(ms) {
