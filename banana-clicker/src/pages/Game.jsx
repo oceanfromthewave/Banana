@@ -90,27 +90,32 @@ function Game({ nickname }) {
     }
   }, [owned, current]);
 
-  // LuckyBox 쿨타임 관리 (최초 진입, 뽑기 성공 후 fetch)
-  const fetchLuckyboxCooldown = async () => {
-    const res = await fetch(`/api/luckybox/last/${nickname}`);
-    const data = await res.json();
-    if (!data.lastTime) {
-      setLuckyCooldown(null); // 최초 가입/뽑기 전: 모달 안띄움
-      setShowLuckyBox(false);
-      return;
-    }
-    const now = Date.now();
-    const remain = data.lastTime + COOLDOWN_MS - now;
-    if (remain <= 0) {
-      setLuckyCooldown(0); // 바로 가능!
+// LuckyBox 쿨타임 관리 (최초 진입, 뽑기 성공 후 fetch)
+const fetchLuckyboxCooldown  = async (suppressAutoOpen = false) => {
+  const res = await fetch(`/api/luckybox/last/${nickname}`);
+  const data = await res.json();
+  if (!data.lastTime) {
+    setLuckyCooldown(null);
+    
+    if(!localStorage.getItem("luckybox-closed")){
       setShowLuckyBox(true);
     } else {
-      setLuckyCooldown(remain);
       setShowLuckyBox(false);
-      // 쿨타임 끝나면 모달 자동 오픈
-      timerRef.current = setTimeout(() => setShowLuckyBox(true), remain);
     }
-  };
+    return;
+  }
+  const now = Date.now();
+  const reamin = data.lastTime + COOLDOWN_MS - now;
+  if (reamin <= 0) {
+    setLuckyCooldown(0);
+    if (!suppressAutoOpen) setShowLuckyBox(true);
+  }else {
+    setLuckyCooldown(reamin);
+    setShowLuckyBox(false);
+    timerRef.current = setTimeout(() => setShowLuckyBox(true), reamin);
+  }
+};
+
 
   useEffect(() => {
     fetchLuckyboxCooldown();
@@ -119,10 +124,11 @@ function Game({ nickname }) {
   }, [nickname]);
 
   // LuckyBox 뽑기 성공/닫기 후 쿨타임 새로고침
-  const handleLuckyBoxClose = () => {
-    setShowLuckyBox(false);
-    fetchLuckyboxCooldown();
-  };
+const handleLuckyBoxClose = () => {
+  setShowLuckyBox(false);
+  localStorage.setItem("luckybox-closed", "1"); // 모달 닫음 기록
+  fetchLuckyboxCooldown(true);
+};
 
   // 캐릭터 클릭
   const handleClick = () => setScore((s) => s + 1);
@@ -139,15 +145,16 @@ function Game({ nickname }) {
     <div className={styles.gameRoot}>
       {/* LuckyBox 모달 */}
       <LuckyBoxModal
-        open={showLuckyBox}
-        onClose={handleLuckyBoxClose}
-        nickname={nickname}
-        onSuccess={() => {
-          refreshOwned();
-          alert("🎉 새로운 캐릭터를 획득했습니다!");
-          handleLuckyBoxClose();
-        }}
-        cooldown={luckyCooldown === null ? undefined : luckyCooldown}
+      open={showLuckyBox}
+      onClose={handleLuckyBoxClose}
+      nickname={nickname}
+      onSuccess={() =>{
+        localStorage.removeItem("luckybox-closed"); 
+        refreshOwned();
+        alert("🎉 새로운 캐릭터를 획득했습니다!");
+        handleLuckyBoxClose()
+      }}
+      cooldown={luckyCooldown === null ? undefined : luckyCooldown}
       />
            {/* 배경 */}
       <AnimatePresence mode="wait">

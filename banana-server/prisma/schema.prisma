@@ -8,13 +8,13 @@ datasource db {
 }
 
 model User {
-  id         Int             @id @default(autoincrement())
-  nickname   String          @unique
-  createdAt  DateTime        @default(now())
-  scores     Score[]
-  ownedChars UserCharacter[]
+  id            Int             @id @default(autoincrement())
+  nickname      String          @unique
+  createdAt     DateTime        @default(now())
+  lastLuckybox  DateTime?       // <- 반드시 ? (nullable)
+  scores        Score[]
+  ownedChars    UserCharacter[]
 }
-
 model Score {
   id        Int      @id @default(autoincrement())
   value     Int

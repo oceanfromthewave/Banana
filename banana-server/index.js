@@ -16,7 +16,7 @@ app.post("/api/user", async (req, res) => {
     return res.status(400).json({ ok: false, error: "닉네임 필수" });
   let user = await prisma.user.findUnique({ where: { nickname } });
   if (!user) {
-    user = await prisma.user.create({ data: { nickname } });
+    user = await prisma.user.create({ data: { nickname, lastLuckybox: null } });
     // 최초 바나나 캐릭터 지급
     const banana = await prisma.character.findUnique({
       where: { key: "banana" },
@@ -48,7 +48,6 @@ app.get("/api/collection/:nickname", async (req, res) => {
       },
     },
   });
-  // ★ 404 대신 빈 배열 반환 (유저가 없으면 owned: [])
   if (!user) {
     return res.json({ ok: true, owned: [] });
   }
@@ -56,19 +55,17 @@ app.get("/api/collection/:nickname", async (req, res) => {
   return res.json({ ok: true, owned });
 });
 
-// 4. 마지막 럭키박스 뽑기 시각 반환
+// 4. 마지막 럭키박스 뽑기 시각 반환 (★수정)
 app.get("/api/luckybox/last/:nickname", async (req, res) => {
   const { nickname } = req.params;
   const user = await prisma.user.findUnique({ where: { nickname } });
   if (!user) return res.status(404).json({ lastTime: null });
-  const last = await prisma.userCharacter.findFirst({
-    where: { userId: user.id },
-    orderBy: { acquiredAt: "desc" }, // ← 오타 수정
+  return res.json({
+    lastTime: user.lastLuckybox ? new Date(user.lastLuckybox).getTime() : null,
   });
-  return res.json({ lastTime: last ? last.acquiredAt.getTime() : null });
 });
 
-// 5. LuckyBox (3시간 쿨타임) 캐릭터 뽑기
+// 5. LuckyBox (3시간 쿨타임) 캐릭터 뽑기 (★수정)
 app.post("/api/collection/luckybox", async (req, res) => {
   const { nickname } = req.body;
   if (!nickname)
@@ -77,19 +74,16 @@ app.post("/api/collection/luckybox", async (req, res) => {
   if (!user)
     return res.status(404).json({ ok: false, error: "존재하지 않는 닉네임" });
 
-  // 마지막 캐릭터 획득시간 기준 쿨타임
-  const last = await prisma.userCharacter.findFirst({
-    where: { userId: user.id },
-    orderBy: { acquiredAt: "desc" },
-  });
-  const lastTime = last ? last.acquiredAt.getTime() : 0;
+  // ★ lastLuckybox 기반 쿨타임!
+  const lastTime = user.lastLuckybox
+    ? new Date(user.lastLuckybox).getTime()
+    : 0;
   const now = Date.now();
-  const cooldown = COOLDOWN_MS;
-  if (lastTime && now - lastTime < cooldown) {
+  if (lastTime && now - lastTime < COOLDOWN_MS) {
     return res.status(403).json({
       ok: false,
       error: "쿨타임",
-      remain: cooldown - (now - lastTime),
+      remain: COOLDOWN_MS - (now - lastTime),
     });
   }
 
@@ -110,6 +104,13 @@ app.post("/api/collection/luckybox", async (req, res) => {
       data: { userId: user.id, characterId: prize.id },
     });
   }
+
+  // ★ 쿨타임 최신화!
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { lastLuckybox: new Date() },
+  });
+
   return res.json({ ok: true, prize: prize ? prize.key : null });
 });
 
