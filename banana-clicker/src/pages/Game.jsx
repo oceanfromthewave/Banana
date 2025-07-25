@@ -212,19 +212,19 @@ function Game({ nickname }) {
         <div className={styles.topRightUI}>
           <div className={styles.topRightRow}>
             <ThemeSwitcher themeIdx={themeIdx} setThemeIdx={setThemeIdx} />
-            <button
+            {/* <button
               className={styles.saveBtn}
               onClick={() => setShowSave(true)}
-            >💾 점수 저장</button>
+            >💾 점수 저장</button> */}
           </div>
-          <div className={styles.timeNow}>
+          {/* <div className={styles.timeNow}>
             <span className={styles.timeNowIcon}>⏰</span>
             {formatKoreanTime(now)}
-          </div>
+          </div> */}
         </div>
 
         {/* 중앙 ScoreBoard + Character */}
-        <ScoreBoard score={score} />
+        {/* <ScoreBoard score={score} /> */}
         <div className={styles.centerMain}>
           <Character
             type={current}
@@ -237,9 +237,9 @@ function Game({ nickname }) {
         </div>
 
         {/* 우측 하단 도감 */}
-        <div className={styles.collectionWrap}>
+        {/* <div className={styles.collectionWrap}>
           <Collection owned={owned} IMG_MAP={IMG_MAP} />
-        </div>
+        </div> */}
 
         {/* 좌하단 캐릭터 선택 */}
         <div className={styles.charSelectBar}>
@@ -264,10 +264,10 @@ function Game({ nickname }) {
         </div>
 
         {/* 랭킹 모달 버튼 */}
-        <button
+        {/* <button
           className={styles.rankingBtn}
           onClick={() => setShowRanking(true)}
-        >🏆 랭킹 보기</button>
+        >🏆 랭킹 보기</button> */}
 
         {/* 랭킹 모달 */}
         <RankingModal
