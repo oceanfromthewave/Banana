@@ -2,6 +2,7 @@ import React, { useRef, useState, useEffect } from "react";
 import { motion, AnimatePresence, useAnimation } from "framer-motion";
 import styles from "../styles/Character.module.scss";
 
+// 파티클 이모지 모음
 const PARTICLE_EMOJIS = ["+1", "🍌", "⭐️", "✨", "💥", "🥳", "💛", "🎉"];
 
 function randomEmoji() {
@@ -10,66 +11,39 @@ function randomEmoji() {
   return PARTICLE_EMOJIS[Math.floor(Math.random() * PARTICLE_EMOJIS.length)];
 }
 
-function Character({ type, onClick, IMG_MAP, score }) {
-  // 위치/파티클 state
-  const [pos, setPos] = useState({
-    x: window.innerWidth / 2 - 70,
-    y: window.innerHeight / 2 - 70
-  });
+function Character({ type, onClick, IMG_MAP, score = 0, scale = 1, particleKey }) {
   const [popList, setPopList] = useState([]);
   const idRef = useRef(0);
   const controls = useAnimation();
 
-  // 방향키 이동
-  useEffect(() => {
-    function handleKeyDown(e) {
-      setPos(pos => {
-        const step = 36;
-        let { x, y } = pos;
-        if (e.key === "ArrowLeft") x -= step;
-        if (e.key === "ArrowRight") x += step;
-        if (e.key === "ArrowUp") y -= step;
-        if (e.key === "ArrowDown") y += step;
-        x = Math.max(0, Math.min(window.innerWidth - 140, x));
-        y = Math.max(0, Math.min(window.innerHeight - 140, y));
-        return { x, y };
-      });
-
-      // 스페이스바 점수 증가
-      if (e.key === " " || e.code === "Space") {
-        if (onClick) onClick();
-        // 클릭과 동일한 파티클 효과
-        createParticles();
-      }
-    }
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-    // eslint-disable-next-line
-  }, [onClick]);
-
-  // 캐릭터 점프 애니메이션
+  // 점프 애니메이션 (scale 연동)
   useEffect(() => {
     controls.start({
-      y: [0, -36, 0],
+      y: [0, -36 * scale, 0],
       transition: { duration: 2, repeat: Infinity, ease: "easeInOut" }
     });
     return () => controls.stop();
-  }, [controls]);
+  }, [controls, scale]);
 
-  // 클릭 시 파티클
+  // 클릭시 점수+파티클
   function handleClick(e) {
     if (onClick) onClick();
-    createParticles();
+    burstParticles();
   }
 
-  // 파티클 생성 함수 (클릭 or 스페이스)
-  function createParticles() {
-    const cx = 70; // 중앙 좌표 (img 140x140이니까)
-    const cy = 70;
+  // particleKey 바뀔 때(스페이스바)도 파티클 터짐
+  useEffect(() => {
+    if (particleKey > 0) burstParticles();
+    // eslint-disable-next-line
+  }, [particleKey]);
+
+  function burstParticles() {
+    const cx = 70 * scale;
+    const cy = 70 * scale;
     const count = Math.floor(Math.random() * 3) + 3;
     const newParticles = Array.from({ length: count }).map(() => {
       const angle = Math.random() * Math.PI * 2;
-      const dist = 36 + Math.random() * 32;
+      const dist = (36 + Math.random() * 32) * scale;
       return {
         id: idRef.current++,
         x: cx,
@@ -88,9 +62,6 @@ function Character({ type, onClick, IMG_MAP, score }) {
     setPopList(list => list.filter(p => p.id !== id));
   }
 
-  // 점수에 따른 scale (최대 2배로 제한)
-  const scale = Math.min(2, 1 + (score || 0) * 0.015);
-
   return (
     <div className={styles.charRoot}>
       <motion.img
@@ -101,16 +72,16 @@ function Character({ type, onClick, IMG_MAP, score }) {
         animate={controls}
         style={{
           position: "absolute",
-          left: pos.x,
-          top: pos.y,
+          left: "50%",
+          top: "50%",
+          width: 140 * scale,
+          height: 140 * scale,
+          transform: "translate(-50%, -50%)",
           zIndex: 11,
           cursor: "pointer",
-          width: 140,
-          height: 140,
-          scale
         }}
         whileTap={{
-          scale: scale * 1.11,
+          scale: 1.11 * scale,
           rotate: [0, -10, 10, -6, 6, 0],
           transition: { duration: 0.33 }
         }}
@@ -146,15 +117,16 @@ function Character({ type, onClick, IMG_MAP, score }) {
             style={{
               pointerEvents: "none",
               position: "absolute",
-              left: pos.x,
-              top: pos.y,
+              left: "50%",
+              top: "50%",
               userSelect: "none",
-              fontSize: 26 + Math.random() * 13,
+              fontSize: 26 * scale + Math.random() * 13,
               color: "#ffdf48",
               textShadow: "0 2px 10px #e5c30090, 0 1px 0 #fff7",
               fontWeight: 800,
               willChange: "transform, opacity",
               zIndex: 12,
+              transform: "translate(-50%, -50%)"
             }}
             onAnimationComplete={() => handleParticleEnd(p.id)}
           >

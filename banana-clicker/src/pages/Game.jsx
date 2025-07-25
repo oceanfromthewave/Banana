@@ -1,5 +1,4 @@
-// src/pages/Game.jsx
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import ScoreBoard from "../components/ScoreBoard";
 import Character from "../components/Character";
 import Collection from "../components/Collection";
@@ -10,7 +9,7 @@ import LuckyBoxModal from "../components/LuckyBoxModal";
 import { THEMES } from "../constants/themes";
 import { useCollection } from "../hooks/useCollection";
 import styles from "../styles/Game.module.scss";
-import {AnimatePresence, motion} from 'framer-motion';
+import { AnimatePresence, motion } from "framer-motion";
 
 import bananaImg from "../assets/banana.png";
 import tomatoImg from "../assets/tomato.png";
@@ -45,6 +44,7 @@ function formatKoreanTime(dateObj) {
 
 function Game({ nickname }) {
   const [score, setScore] = useState(0);
+  const [particleKey, setParticleKey] = useState(0);
   const [themeIdx, setThemeIdx] = useState(0);
   const theme = THEMES[themeIdx];
   const [showRanking, setShowRanking] = useState(false);
@@ -58,10 +58,8 @@ function Game({ nickname }) {
   const [bgKey, setBgKey] = useState(0);
 
   useEffect(() => {
-    setBgKey(k => k + 1); 
+    setBgKey(k => k + 1);
   }, [themeIdx]);
-
-
 
   // DB 연동 컬렉션
   const { owned, addCharacter, loading: ownedLoading, refreshOwned } = useCollection(nickname);
@@ -90,48 +88,62 @@ function Game({ nickname }) {
     }
   }, [owned, current]);
 
-// LuckyBox 쿨타임 관리 (최초 진입, 뽑기 성공 후 fetch)
-const fetchLuckyboxCooldown  = async (suppressAutoOpen = false) => {
-  const res = await fetch(`/api/luckybox/last/${nickname}`);
-  const data = await res.json();
-  if (!data.lastTime) {
-    setLuckyCooldown(null);
-    
-    if(!localStorage.getItem("luckybox-closed")){
-      setShowLuckyBox(true);
-    } else {
+  // LuckyBox 쿨타임 관리 (최초 진입, 뽑기 성공 후 fetch)
+  const fetchLuckyboxCooldown = async (suppressAutoOpen = false) => {
+    const res = await fetch(`/api/luckybox/last/${nickname}`);
+    const data = await res.json();
+    if (!data.lastTime) {
+      setLuckyCooldown(null);
       setShowLuckyBox(false);
+      return;
     }
-    return;
-  }
-  const now = Date.now();
-  const reamin = data.lastTime + COOLDOWN_MS - now;
-  if (reamin <= 0) {
-    setLuckyCooldown(0);
-    if (!suppressAutoOpen) setShowLuckyBox(true);
-  }else {
-    setLuckyCooldown(reamin);
-    setShowLuckyBox(false);
-    timerRef.current = setTimeout(() => setShowLuckyBox(true), reamin);
-  }
-};
-
+    const now = Date.now();
+    const remain = data.lastTime + COOLDOWN_MS - now;
+    if (remain <= 0) {
+      setLuckyCooldown(0);
+      if (!suppressAutoOpen) setShowLuckyBox(true);
+    } else {
+      setLuckyCooldown(remain);
+      setShowLuckyBox(false);
+      timerRef.current = setTimeout(() => setShowLuckyBox(true), remain);
+    }
+  };
 
   useEffect(() => {
     fetchLuckyboxCooldown();
     return () => { if (timerRef.current) clearTimeout(timerRef.current); };
-    // eslint-disable-next-line
   }, [nickname]);
 
   // LuckyBox 뽑기 성공/닫기 후 쿨타임 새로고침
-const handleLuckyBoxClose = () => {
-  setShowLuckyBox(false);
-  localStorage.setItem("luckybox-closed", "1"); // 모달 닫음 기록
-  fetchLuckyboxCooldown(true);
-};
+  const handleLuckyBoxClose = () => {
+    setShowLuckyBox(false);
+    fetchLuckyboxCooldown(true);
+  };
 
-  // 캐릭터 클릭
-  const handleClick = () => setScore((s) => s + 1);
+  // 캐릭터 클릭, 스페이스바, 파티클/스케일 증가 모두 여기서!
+  const handleScoreUp = useCallback(() => {
+    setScore(s => s + 1);
+    setParticleKey(k => k + 1);
+  }, []);
+
+  // 스페이스바 점수+파티클
+  useEffect(() => {
+    function handleSpace(e) {
+      if ((e.code === "Space" || e.key === " " || e.keyCode === 32)) {
+        e.preventDefault();
+        handleScoreUp();
+      }
+    }
+    window.addEventListener("keydown", handleSpace);
+    return () => window.removeEventListener("keydown", handleSpace);
+  }, [handleScoreUp]);
+
+  // 확대 비율: 점수 0~최대값에 따라 1~2.5 정도까지
+  const minScale = 1;
+  const maxScale = 2.5;
+  const maxScore = 300; // 이 점수까지 가면 최대 크기 도달
+  const characterScale = minScale + (maxScale - minScale) * Math.min(score, maxScore) / maxScore;
+  const bgScale = characterScale; // 배경도 동일하게 확대 (원하면 따로 조절)
 
   if (ownedLoading) {
     return (
@@ -145,23 +157,22 @@ const handleLuckyBoxClose = () => {
     <div className={styles.gameRoot}>
       {/* LuckyBox 모달 */}
       <LuckyBoxModal
-      open={showLuckyBox}
-      onClose={handleLuckyBoxClose}
-      nickname={nickname}
-      onSuccess={() =>{
-        localStorage.removeItem("luckybox-closed"); 
-        refreshOwned();
-        alert("🎉 새로운 캐릭터를 획득했습니다!");
-        handleLuckyBoxClose()
-      }}
-      cooldown={luckyCooldown === null ? undefined : luckyCooldown}
+        open={showLuckyBox}
+        onClose={handleLuckyBoxClose}
+        nickname={nickname}
+        onSuccess={() => {
+          refreshOwned();
+          alert("🎉 새로운 캐릭터를 획득했습니다!");
+          handleLuckyBoxClose();
+        }}
+        cooldown={luckyCooldown === null ? undefined : luckyCooldown}
       />
-           {/* 배경 */}
+      {/* 배경 */}
       <AnimatePresence mode="wait">
         <motion.div
           key={bgKey}
           initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
+          animate={{ opacity: 1, scale: bgScale }}
           exit={{ opacity: 0 }}
           transition={{ duration: 0.65 }}
           style={{
@@ -169,6 +180,8 @@ const handleLuckyBoxClose = () => {
             inset: 0,
             zIndex: 0,
             pointerEvents: "none",
+            originX: 0.5,
+            originY: 0.5,
           }}
         >
           {theme.image ? (
@@ -211,17 +224,17 @@ const handleLuckyBoxClose = () => {
         </div>
 
         {/* 중앙 ScoreBoard + Character */}
-        
         <ScoreBoard score={score} />
-         <div className={styles.centerMain}>
-        <Character
-          type={current}
-          onClick={handleClick}
-          IMG_MAP={IMG_MAP}
-          score={score} // ★추가
+        <div className={styles.centerMain}>
+          <Character
+            type={current}
+            onClick={handleScoreUp}
+            IMG_MAP={IMG_MAP}
+            score={score}
+            scale={characterScale}
+            particleKey={particleKey}
           />
-         </div>
-        
+        </div>
 
         {/* 우측 하단 도감 */}
         <div className={styles.collectionWrap}>
@@ -257,7 +270,7 @@ const handleLuckyBoxClose = () => {
         >🏆 랭킹 보기</button>
 
         {/* 랭킹 모달 */}
-         <RankingModal
+        <RankingModal
           open={showRanking}
           onClose={() => setShowRanking(false)}
           ranking={ranking}
@@ -279,7 +292,7 @@ const handleLuckyBoxClose = () => {
                   setShowSave(false);
                   setScore(0);
                 }}
-                />
+              />
               <div style={{ textAlign: "right", marginTop: 15 }}>
                 <button
                   onClick={() => setShowSave(false)}
